@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Control de Cocina — Barbones</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F2F2F0;color:#1a1a1a;min-height:100vh}
+.top-bar{background:#1D9E75;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.top-bar h1{color:#fff;font-size:17px;font-weight:700;flex:1}
+.progress-bar{width:100px;height:4px;background:rgba(255,255,255,0.3);border-radius:2px}
+.progress-fill{height:100%;background:#fff;border-radius:2px;transition:width 0.3s}
+.app{max-width:480px;margin:0 auto;padding:16px}
+.step{display:none}.step.active{display:block}
+.step-label{font-size:12px;color:#888;margin-bottom:4px;margin-top:4px}
+.step-title{font-size:20px;font-weight:700;margin-bottom:16px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+label{font-size:13px;color:#666;display:block;margin-bottom:5px;margin-top:14px}
+label:first-child{margin-top:0}
+input[type=text],input[type=number],input[type=date],select{width:100%;font-size:16px;padding:11px 13px;border:1.5px solid #E0E0DC;border-radius:10px;background:#fff;color:#1a1a1a;outline:none;-webkit-appearance:none}
+input:focus,select:focus{border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,0.1)}
+.btn{display:block;width:100%;padding:14px;font-size:16px;font-weight:600;border-radius:12px;cursor:pointer;text-align:center;border:none;margin-top:10px}
+.btn-primary{background:#1D9E75;color:#fff}
+.btn-primary:active{background:#0F6E56}
+.btn-secondary{background:#F2F2F0;color:#1a1a1a;border:1.5px solid #E0E0DC}
+.btn-export{background:#1D9E75;color:#fff;font-size:17px;padding:16px;margin-top:20px;border-radius:14px;border:none;width:100%;cursor:pointer;font-weight:700}
+.btn-export:disabled{background:#9FD9C4;cursor:not-allowed}
+.turno-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.turno-btn{padding:16px;border:1.5px solid #E0E0DC;border-radius:12px;text-align:center;cursor:pointer;font-size:16px;font-weight:600;background:#fff}
+.turno-btn.selected{border:2.5px solid #1D9E75;color:#1D9E75;background:#F0FBF7}
+.col-hint{display:grid;grid-template-columns:1fr 68px 80px 34px;gap:6px;font-size:11px;color:#aaa;padding:0 0 6px;margin-top:6px}
+.col-hint span:not(:first-child){text-align:center}
+.insumo-row{display:grid;grid-template-columns:1fr 68px 80px 34px;gap:6px;align-items:center;margin-bottom:8px}
+.insumo-row input[type=text]{font-size:15px;padding:10px 11px}
+.insumo-row input[type=number]{font-size:15px;padding:10px 8px;text-align:center}
+.insumo-row select{font-size:14px;padding:10px 4px;text-align:center}
+.del-btn{width:34px;height:38px;background:#FEF2F0;border:none;border-radius:8px;cursor:pointer;color:#C0392B;font-size:18px;display:flex;align-items:center;justify-content:center}
+.add-btn{font-size:14px;color:#1D9E75;background:#F0FBF7;border:1.5px dashed #5DCAA5;border-radius:10px;padding:10px;cursor:pointer;width:100%;margin-top:6px;font-weight:500}
+.seccion-header{font-size:15px;font-weight:700;margin-bottom:10px;color:#1a1a1a}
+.cant-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.cant-row input{flex:1}
+.cant-unit{font-size:14px;color:#666;font-weight:500;white-space:nowrap}
+.yn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.yn-btn{padding:14px;border:1.5px solid #E0E0DC;border-radius:12px;text-align:center;cursor:pointer;font-size:15px;font-weight:600;background:#fff}
+.yn-btn.si{border:2.5px solid #1D9E75;color:#0F6E56;background:#F0FBF7}
+.yn-btn.no{border:2.5px solid #E24B4A;color:#A32D2D;background:#FEF2F0}
+.check-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F0F0EB}
+.check-row:last-child{border-bottom:none}
+.check-label{font-size:15px}
+.toggle{width:44px;height:26px;border-radius:13px;background:#D0D0CC;position:relative;cursor:pointer;border:none;flex-shrink:0;transition:background 0.2s}
+.toggle.on{background:#1D9E75}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle.on::after{transform:translateX(18px)}
+.nav-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.merma-block{background:#FEF9F7;border:1px solid #FDDDD7;border-radius:12px;padding:14px;margin-bottom:10px}
+.merma-block label{margin-top:10px}
+.dots{display:flex;gap:6px;justify-content:center;margin:12px 0}
+.dot{width:8px;height:8px;border-radius:50%;background:#D0D0CC;transition:background 0.2s}
+.dot.done{background:#9FE1CB}.dot.active{background:#1D9E75}
+/* Toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:24px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;z-index:999;transition:opacity 0.3s;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
+.toast.ok{background:#1D9E75;color:#fff}
+.toast.err{background:#C0392B;color:#fff}
+.toast.show{opacity:1}
+/* Overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.overlay-box{background:#fff;border-radius:20px;padding:28px 24px;max-width:320px;width:90%;text-align:center}
+.overlay-box h2{font-size:18px;font-weight:700;margin-bottom:8px}
+.overlay-box p{font-size:14px;color:#666;margin-bottom:20px;line-height:1.5}
+.spinner{width:40px;height:40px;border:4px solid #E0E0DC;border-top-color:#1D9E75;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>🍳 Control de Cocina</h1>
+  <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+</div>
+
+<div class="app">
+<div class="dots" id="dots"></div>
+
+<!-- STEP 0: Identificación -->
+<div class="step active" id="step-0">
+  <div class="step-label">Paso 1 de 8</div>
+  <div class="step-title">Identificación</div>
+  <div class="card">
+    <label>Nombre del responsable</label>
+    <input type="text" id="nombre" placeholder="Tu nombre" autocomplete="off" autocorrect="off">
+    <label>Fecha</label>
+    <input type="date" id="fecha">
+    <label>Turno</label>
+    <div class="turno-grid">
+      <div class="turno-btn" id="btn-am" onclick="selTurno('AM')">☀️ AM</div>
+      <div class="turno-btn" id="btn-pm" onclick="selTurno('PM')">🌙 PM</div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="goTo(1)">Continuar →</button>
+</div>
+
+<!-- STEP 1: Entrada -->
+<div class="step" id="step-1">
+  <div class="step-label">Paso 2 de 8</div>
+  <div class="step-title">Menú — Entrada</div>
+  <div class="card">
+    <div class="seccion-header">Insumos utilizados</div>
+    <div class="col-hint"><span>Insumo</span><span>Cant.</span><span>Unidad</span><span></span></div>
+    <div id="ins-entrada"></div>
+    <button class="add-btn" onclick="addIns('entrada')">+ Agregar insumo</button>
+  </div>
+  <div class="card">
+    <div class="seccion-header">¿Cuántas unidades se realizaron?</div>
+    <div class="cant-row"><input type="number" id="cant-entrada" placeholder="0" min="0" inputmode="numeric"><span class="cant-unit">UND</span></div>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="goTo(0)">← Atrás</button>
+    <button class="btn btn-primary" onclick="save();goTo(2)">Guardar y continuar</button>
+  </div>
+</div>
+
+<!-- STEP 2: Crema -->
+<div class="step" id="step-2">
+  <div class="step-label">Paso 3 de 8</div>
+  <div class="step-title">Menú — Crema</div>
+  <div class="card">
+    <div class="seccion-header">Insumos utilizados</div>
+    <div class="col-hint"><span>Insumo</span><span>Cant.</span><span>Unidad</span><span></span></div>
+    <div id="ins-crema"></div>
+    <button class="add-btn" onclick="addIns('crema')">+ Agregar insumo</button>
+  </div>
+  <div class="card">
+    <div class="seccion-header">¿Cuántos litros se realizaron?</div>
+    <div class="cant-row"><input type="number" id="cant-crema" placeholder="0" min="0" inputmode="numeric"><span class="cant-unit">L</span></div>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="goTo(1)">← Atrás</button>
+    <button class="btn btn-primary" onclick="save();goTo(3)">Guardar y continuar</button>
+  </div>
+</div>
+
+<!-- STEP 3: Fondo -->
+<div class="step" id="step-3">
+  <div class="step-label">Paso 4 de 8</div>
+  <div class="step-title">Menú — Fondo</div>
+  <div class="card">
+    <div class="seccion-header">Fondo normal — insumos</div>
+    <div class="col-hint"><span>Insumo</span><span>Cant.</span><span>Unidad</span><span></span></div>
+    <div id="ins-fondo"></div>
+    <button class="add-btn" onclick="addIns('fondo')">+ Agregar insumo</button>
+  </div>
+  <div class="card">
+    <div class="cant-row"><input type="number" id="cant-fondo" placeholder="Cant. realizada (fondo normal)" min="0" inputmode="numeric"><span class="cant-unit">UND</span></div>
+  </div>
+  <div class="card">
+    <div class="seccion-header">Fondo vegetariano — insumos</div>
+    <div class="col-hint"><span>Insumo</span><span>Cant.</span><span>Unidad</span><span></span></div>
+    <div id="ins-veggie"></div>
+    <button class="add-btn" onclick="addIns('veggie')">+ Agregar insumo</button>
+  </div>
+  <div class="card">
+    <div class="cant-row"><input type="number" id="cant-veggie" placeholder="Cant. realizada (vegetariano)" min="0" inputmode="numeric"><span class="cant-unit">UND</span></div>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="goTo(2)">← Atrás</button>
+    <button class="btn btn-primary" onclick="save();goTo(4)">Guardar y continuar</button>
+  </div>
+</div>
+
+<!-- STEP 4: Postre -->
+<div class="step" id="step-4">
+  <div class="step-label">Paso 5 de 8</div>
+  <div class="step-title">Menú — Postre</div>
+  <div class="card">
+    <div class="seccion-header">Insumos utilizados</div>
+    <div class="col-hint"><span>Insumo</span><span>Cant.</span><span>Unidad</span><span></span></div>
+    <div id="ins-postre"></div>
+    <button class="add-btn" onclick="addIns('postre')">+ Agregar insumo</button>
+  </div>
+  <div class="card">
+    <div class="seccion-header">¿Cuántas unidades se realizaron?</div>
+    <div class="cant-row"><input type="number" id="cant-postre" placeholder="0" min="0" inputmode="numeric"><span class="cant-unit">UND</span></div>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="goTo(3)">← Atrás</button>
+    <button class="btn btn-primary" onclick="save();goTo(5)">Guardar y continuar</button>
+  </div>
+</div>
+
+<!-- STEP 5: Colaciones -->
+<div class="step" id="step-5">
+  <div class="step-label">Paso 6 de 8</div>
+  <div class="step-title">Colaciones y snacks</div>
+  <div class="card">
+    <div class="seccion-header">Colación personal — insumos</div>
+    <div class="col-hint"><span>Insumo</span><span>Cant.</span><span>Unidad</span><span></span></div>
+    <div id="ins-colacion"></div>
+    <button class="add-btn" onclick="addIns('colacion')">+ Agregar insumo</button>
+    <label style="margin-top:14px">¿Cuántas colaciones se realizaron?</label>
+    <div class="cant-row"><input type="number" id="cant-colacion" placeholder="0" min="0" inputmode="numeric"><span class="cant-unit">UND</span></div>
+  </div>
+  <div class="card">
+    <div class="seccion-header">Snacks — insumos</div>
+    <div class="col-hint"><span>Insumo</span><span>Cant.</span><span>Unidad</span><span></span></div>
+    <div id="ins-snack"></div>
+    <button class="add-btn" onclick="addIns('snack')">+ Agregar insumo</button>
+    <label style="margin-top:14px">¿Cuántos snacks se realizaron?</label>
+    <div class="cant-row"><input type="number" id="cant-snack" placeholder="0" min="0" inputmode="numeric"><span class="cant-unit">UND</span></div>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="goTo(4)">← Atrás</button>
+    <button class="btn btn-primary" onclick="save();goTo(6)">Guardar y continuar</button>
+  </div>
+</div>
+
+<!-- STEP 6: Mermas -->
+<div class="step" id="step-6">
+  <div class="step-label">Paso 7 de 8</div>
+  <div class="step-title">Mermas</div>
+  <div class="card">
+    <div class="seccion-header">Registro de mermas</div>
+    <div id="mermas-list"></div>
+    <button class="add-btn" onclick="addMerma()">+ Agregar merma</button>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="goTo(5)">← Atrás</button>
+    <button class="btn btn-primary" onclick="save();goTo(7)">Guardar y continuar</button>
+  </div>
+</div>
+
+<!-- STEP 7: Cierre -->
+<div class="step" id="step-7">
+  <div class="step-label">Paso 8 de 8</div>
+  <div class="step-title">Limpieza y cierre</div>
+  <div class="card">
+    <div class="seccion-header">¿Qué se limpió hoy?</div>
+    <div id="limpieza-grid"></div>
+  </div>
+  <div class="card">
+    <div class="seccion-header">Cambio de aceite</div>
+    <div class="yn-grid">
+      <div class="yn-btn" id="aceite-si" onclick="toggleYN('aceite','si')">Sí</div>
+      <div class="yn-btn" id="aceite-no" onclick="toggleYN('aceite','no')">No</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="seccion-header">Control de temperatura</div>
+    <div class="yn-grid">
+      <div class="yn-btn" id="temp-si" onclick="toggleYN('temp','si')">Sí</div>
+      <div class="yn-btn" id="temp-no" onclick="toggleYN('temp','no')">No</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="seccion-header">Checklist</div>
+    <div id="checklist-items"></div>
+  </div>
+  <button class="btn-export" id="btn-export" onclick="enviar()">✓ Enviar registro</button>
+</div>
+
+</div><!-- .app -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Overlay enviando -->
+<div class="overlay" id="overlay-sending">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <h2>Enviando registro...</h2>
+    <p>Guardando en la base de datos. No cierres esta pantalla.</p>
+  </div>
+</div>
+
+<!-- Overlay éxito -->
+<div class="overlay" id="overlay-ok">
+  <div class="overlay-box">
+    <div style="font-size:48px;margin-bottom:12px">✅</div>
+    <h2>¡Registro guardado!</h2>
+    <p>Los datos quedaron guardados en la base de datos correctamente.</p>
+    <button class="btn btn-primary" style="margin-top:8px" onclick="resetApp()">Nuevo registro</button>
+  </div>
+</div>
+
+<!-- Overlay error -->
+<div class="overlay" id="overlay-err">
+  <div class="overlay-box">
+    <div style="font-size:48px;margin-bottom:12px">⚠️</div>
+    <h2>Error al enviar</h2>
+    <p id="err-msg">No se pudo guardar el registro. Revisa tu conexión e intenta nuevamente.</p>
+    <button class="btn btn-primary" style="margin-top:8px" onclick="hideOverlays();enviar()">Reintentar</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="hideOverlays()">Cancelar</button>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9tUNt5S3itUp0-E1tyZTL0qd5ik-lm-61krSkKwrc0twT5ej4uAPe1N4Y-RfK_7nN/exec';
+const STEPS = 8;
+let cur = 0, turno = '';
+const D = JSON.parse(localStorage.getItem('cocina_bb') || '{}');
+const SECS = ['entrada','crema','fondo','veggie','postre','colacion','snack'];
+const LIMP = ['Campana','Mesones','Paredes','Refris','Hornos','Plancha','Piso','Tablas','Baño maría'];
+const CHECK = ['Pres. personal','Mise & place','Colación personal','Menú clientes','Marcar papas','Inventario','Limpieza','Rotulación','Pedido','Temperaturas'];
+const YN = {aceite:'', temp:''};
+const LS = {}, CS = {};
+
+const PREP_COLORS = {
+  'Entrada':'E8F8F3','Crema':'D4F0E6','Fondo normal':'C0E8D9',
+  'Fondo vegetariano':'ACE0CC','Postre':'98D8BF',
+  'Colación personal':'FFF3CD','Snack':'FFE8A1','Merma':'FDDDD7'
+};
+const CANT_BG = {
+  'Entrada':'C8F0E3','Crema':'B0E8D4','Fondo normal':'98DFBF',
+  'Fondo vegetariano':'80D7AA','Postre':'68CF95',
+  'Colación personal':'FFE99A','Snack':'FFDC70'
+};
+const SECS_DEF = [
+  ['entrada','Entrada','cant-entrada','UND'],
+  ['crema','Crema','cant-crema','L'],
+  ['fondo','Fondo normal','cant-fondo','UND'],
+  ['veggie','Fondo vegetariano','cant-veggie','UND'],
+  ['postre','Postre','cant-postre','UND'],
+  ['colacion','Colación personal','cant-colacion','UND'],
+  ['snack','Snack','cant-snack','UND'],
+];
+
+function init(){
+  SECS.forEach(s=>{ if(!D[s]) D[s]=[]; });
+  if(!D.mermas) D.mermas=[];
+  ['nombre','fecha','cant-entrada','cant-crema','cant-fondo','cant-veggie','cant-postre','cant-colacion','cant-snack'].forEach(k=>{
+    if(D[k]){ const e=document.getElementById(k); if(e) e.value=D[k]; }
+  });
+  if(D.turno) selTurno(D.turno);
+  SECS.forEach(s=>renderIns(s));
+  renderMermas();
+  if(D.aceite) toggleYN('aceite',D.aceite);
+  if(D.temp) toggleYN('temp',D.temp);
+  const fe=document.getElementById('fecha');
+  if(!fe.value) fe.value=new Date().toISOString().split('T')[0];
+  initLimp(); initCheck(); updateProg();
+}
+
+function save(){
+  ['nombre','fecha','cant-entrada','cant-crema','cant-fondo','cant-veggie','cant-postre','cant-colacion','cant-snack'].forEach(k=>{
+    const e=document.getElementById(k); if(e) D[k]=e.value;
+  });
+  D.turno=turno;
+  SECS.forEach(s=>{
+    D[s]=[];
+    document.querySelectorAll(`#ins-${s} .insumo-row`).forEach(r=>{
+      const ni=r.querySelector('input[type=text]');
+      const nq=r.querySelector('input[type=number]');
+      const nu=r.querySelector('select');
+      if(ni&&ni.value.trim()) D[s].push({n:ni.value.trim(),q:nq?nq.value:'',u:nu?nu.value:'kg'});
+    });
+  });
+  D.mermas=[];
+  document.querySelectorAll('#mermas-list .merma-block').forEach(b=>{
+    const texts=b.querySelectorAll('input[type=text]');
+    const nq=b.querySelector('input[type=number]');
+    const nu=b.querySelector('select');
+    D.mermas.push({n:texts[0]?texts[0].value:'',q:nq?nq.value:'',u:nu?nu.value:'kg',r:texts[1]?texts[1].value:''});
+  });
+  D.aceite=YN.aceite; D.temp=YN.temp;
+  D.limp={...LS}; D.check={...CS};
+  localStorage.setItem('cocina_bb',JSON.stringify(D));
+}
+
+function selTurno(t){
+  turno=t;
+  document.getElementById('btn-am').classList.toggle('selected',t==='AM');
+  document.getElementById('btn-pm').classList.toggle('selected',t==='PM');
+}
+
+function goTo(n){
+  document.getElementById('step-'+cur).classList.remove('active');
+  cur=n;
+  document.getElementById('step-'+cur).classList.add('active');
+  updateProg(); window.scrollTo(0,0);
+}
+
+function updateProg(){
+  document.getElementById('progress').style.width=((cur/(STEPS-1))*100)+'%';
+  const d=document.getElementById('dots'); d.innerHTML='';
+  for(let i=0;i<STEPS;i++){
+    const el=document.createElement('div');
+    el.className='dot'+(i<cur?' done':i===cur?' active':'');
+    d.appendChild(el);
+  }
+}
+
+function unitSel(val='kg'){
+  return `<select><option value="kg"${val==='kg'?' selected':''}>kg</option><option value="UND"${val==='UND'?' selected':''}>UND</option></select>`;
+}
+
+function addIns(sec,item={}){
+  const c=document.getElementById('ins-'+sec);
+  const r=document.createElement('div'); r.className='insumo-row';
+  r.innerHTML=`<input type="text" placeholder="Insumo" value="${item.n||''}" autocomplete="off" autocorrect="off"><input type="number" placeholder="0" value="${item.q||''}" min="0" step="0.01" inputmode="decimal">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button>`;
+  c.appendChild(r);
+  if(!item.n) r.querySelector('input[type=text]').focus();
+}
+
+function renderIns(sec){
+  const c=document.getElementById('ins-'+sec); if(!c) return;
+  c.innerHTML='';
+  (D[sec]||[]).forEach(i=>addIns(sec,i));
+  if(!D[sec]||!D[sec].length) addIns(sec);
+}
+
+function addMerma(item={}){
+  const c=document.getElementById('mermas-list');
+  const b=document.createElement('div'); b.className='merma-block';
+  b.innerHTML=`<label>Insumo / producto</label>
+    <div class="insumo-row"><input type="text" placeholder="Nombre" value="${item.n||''}" autocomplete="off"><input type="number" placeholder="0" value="${item.q||''}" min="0" step="0.01" inputmode="decimal">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button></div>
+    <label>Razón</label><input type="text" placeholder="¿Por qué se generó?" value="${item.r||''}" autocomplete="off">`;
+  c.appendChild(b);
+}
+
+function renderMermas(){
+  document.getElementById('mermas-list').innerHTML='';
+  (D.mermas||[]).forEach(m=>addMerma(m));
+}
+
+function toggleYN(k,v){
+  YN[k]=v;
+  ['si','no'].forEach(x=>{ const e=document.getElementById(k+'-'+x); if(e) e.className='yn-btn'+(v===x?' '+x:''); });
+}
+
+function initLimp(){
+  const g=document.getElementById('limpieza-grid');
+  LIMP.forEach(item=>{
+    const saved=D.limp&&D.limp[item]; LS[item]=saved||false;
+    const r=document.createElement('div'); r.className='check-row';
+    r.innerHTML=`<span class="check-label">${item}</span><button class="toggle${saved?' on':''}" onclick="toggleChk(this,'L','${item}')"></button>`;
+    g.appendChild(r);
+  });
+}
+
+function initCheck(){
+  const g=document.getElementById('checklist-items');
+  CHECK.forEach(item=>{
+    const saved=D.check&&D.check[item]; CS[item]=saved||false;
+    const r=document.createElement('div'); r.className='check-row';
+    r.innerHTML=`<span class="check-label">${item}</span><button class="toggle${saved?' on':''}" onclick="toggleChk(this,'C','${item}')"></button>`;
+    g.appendChild(r);
+  });
+}
+
+function toggleChk(btn,t,item){
+  const on=btn.classList.toggle('on');
+  if(t==='L') LS[item]=on; else CS[item]=on;
+}
+
+function hideOverlays(){
+  ['overlay-sending','overlay-ok','overlay-err'].forEach(id=>{
+    document.getElementById(id).classList.remove('show');
+  });
+}
+
+function resetApp(){
+  localStorage.removeItem('cocina_bb');
+  location.reload();
+}
+
+async function enviar(){
+  save();
+
+  const fecha = D.fecha || new Date().toISOString().split('T')[0];
+  const nombre = D.nombre || '';
+  const turnoVal = D.turno || '';
+  const fechaFmt = fecha.split('-').reverse().join('-');
+
+  // Validación básica
+  if(!nombre.trim()){ alert('Por favor ingresa tu nombre.'); goTo(0); return; }
+  if(!turnoVal){ alert('Por favor selecciona el turno AM o PM.'); goTo(0); return; }
+
+  // Construir filas de insumos
+  const insumos = [];
+  for(const [key, prep, cantKey, cantUnit] of SECS_DEF){
+    const items = D[key]||[];
+    const cantV = D[cantKey]||'';
+    // Fila cantidad preparada
+    if(cantV){
+      insumos.push([fechaFmt, nombre, turnoVal, prep, 'CANTIDAD PREPARADA', Number(cantV), cantUnit]);
+    }
+    // Filas insumos
+    for(const item of items){
+      if(item.n) insumos.push([fechaFmt, nombre, turnoVal, prep, item.n, item.q?Number(item.q):'', item.u]);
+    }
+  }
+  // Mermas
+  for(const m of (D.mermas||[])){
+    if(m.n){
+      const detalle = m.n + (m.r ? ` — ${m.r}` : '');
+      insumos.push([fechaFmt, nombre, turnoVal, 'Merma', detalle, m.q?Number(m.q):'', m.u]);
+    }
+  }
+
+  // Fila turno
+  const turnoHeaders = ['Fecha','Responsable','Turno','Cambio aceite','Control T°',
+    ...LIMP.map(x=>'Limp. — '+x),
+    ...CHECK.map(x=>'Check — '+x)];
+  const turnoRow = [
+    fechaFmt, nombre, turnoVal,
+    D.aceite==='si'?'Sí':'No',
+    D.temp==='si'?'Sí':'No',
+    ...LIMP.map(x=>(D.limp&&D.limp[x])?'Sí':'No'),
+    ...CHECK.map(x=>(D.check&&D.check[x])?'OK':'—'),
+  ];
+
+  const payload = { insumos, turnoHeaders, turnoRow };
+
+  // Mostrar overlay enviando
+  hideOverlays();
+  document.getElementById('overlay-sending').classList.add('show');
+  document.getElementById('btn-export').disabled = true;
+
+  try {
+    const resp = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const json = await resp.json();
+    hideOverlays();
+    if(json.ok){
+      document.getElementById('overlay-ok').classList.add('show');
+    } else {
+      document.getElementById('err-msg').textContent = json.error || 'Error desconocido.';
+      document.getElementById('overlay-err').classList.add('show');
+    }
+  } catch(err){
+    hideOverlays();
+    document.getElementById('err-msg').textContent = 'Sin conexión o error de red: ' + err.message;
+    document.getElementById('overlay-err').classList.add('show');
+  } finally {
+    document.getElementById('btn-export').disabled = false;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
