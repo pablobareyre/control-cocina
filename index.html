@@ -352,7 +352,7 @@ function save(){
       const ni=r.querySelector('input[type=text]');
       const nq=r.querySelector('input[type=number]');
       const nu=r.querySelector('select');
-      if(ni&&ni.value.trim()) D[s].push({n:ni.value.trim(),q:nq?nq.value:'',u:nu?nu.value:'kg'});
+      if(ni&&ni.value.trim()) D[s].push({n:ni.value.trim(),q:nq?nq.value.replace(',','.'):'',u:nu?nu.value:'kg'});
     });
   });
   D.mermas=[];
@@ -360,7 +360,7 @@ function save(){
     const texts=b.querySelectorAll('input[type=text]');
     const nq=b.querySelector('input[type=number]');
     const nu=b.querySelector('select');
-    D.mermas.push({n:texts[0]?texts[0].value:'',q:nq?nq.value:'',u:nu?nu.value:'kg',r:texts[1]?texts[1].value:''});
+    D.mermas.push({n:texts[0]?texts[0].value:'',q:nq?nq.value.replace(',','.'):'',u:nu?nu.value:'kg',r:texts[1]?texts[1].value:''});
   });
   D.aceite=YN.aceite; D.temp=YN.temp;
   D.limp={...LS}; D.check={...CS};
@@ -397,7 +397,7 @@ function unitSel(val='kg'){
 function addIns(sec,item={}){
   const c=document.getElementById('ins-'+sec);
   const r=document.createElement('div'); r.className='insumo-row';
-  r.innerHTML=`<input type="text" placeholder="Insumo" value="${item.n||''}" autocomplete="off" autocorrect="off"><input type="number" placeholder="0" value="${item.q||''}" min="0" step="0.01" inputmode="decimal">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button>`;
+  r.innerHTML=`<input type="text" placeholder="Insumo" value="${item.n||''}" autocomplete="off" autocorrect="off"><input type="text" placeholder="0,0" value="${item.q||''}" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button>`;
   c.appendChild(r);
   if(!item.n) r.querySelector('input[type=text]').focus();
 }
@@ -413,7 +413,7 @@ function addMerma(item={}){
   const c=document.getElementById('mermas-list');
   const b=document.createElement('div'); b.className='merma-block';
   b.innerHTML=`<label>Insumo / producto</label>
-    <div class="insumo-row"><input type="text" placeholder="Nombre" value="${item.n||''}" autocomplete="off"><input type="number" placeholder="0" value="${item.q||''}" min="0" step="0.01" inputmode="decimal">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button></div>
+    <div class="insumo-row"><input type="text" placeholder="Nombre" value="${item.n||''}" autocomplete="off"><input type="text" placeholder="0,0" value="${item.q||''}" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button></div>
     <label>Razón</label><input type="text" placeholder="¿Por qué se generó?" value="${item.r||''}" autocomplete="off">`;
   c.appendChild(b);
 }
@@ -464,6 +464,12 @@ function resetApp(){
   location.reload();
 }
 
+
+function parseQ(v){
+  if(v===''||v===null||v===undefined) return '';
+  return Number(String(v).replace(',','.')) || '';
+}
+
 async function enviar(){
   save();
 
@@ -487,14 +493,14 @@ async function enviar(){
     }
     // Filas insumos
     for(const item of items){
-      if(item.n) insumos.push([fechaFmt, nombre, turnoVal, prep, item.n, item.q?Number(item.q):'', item.u]);
+      if(item.n) insumos.push([fechaFmt, nombre, turnoVal, prep, item.n, parseQ(item.q), item.u]);
     }
   }
   // Mermas
   for(const m of (D.mermas||[])){
     if(m.n){
       const detalle = m.n + (m.r ? ` — ${m.r}` : '');
-      insumos.push([fechaFmt, nombre, turnoVal, 'Merma', detalle, m.q?Number(m.q):'', m.u]);
+      insumos.push([fechaFmt, nombre, turnoVal, 'Merma', detalle, parseQ(m.q), m.u]);
     }
   }
 
