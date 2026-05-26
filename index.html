@@ -92,13 +92,21 @@ input:focus,select:focus{border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,1
     <input type="text" id="nombre" placeholder="Tu nombre" autocomplete="off" autocorrect="off">
     <label>Fecha</label>
     <input type="date" id="fecha">
+    <label>Local</label>
+    <select id="local">
+      <option value="">— Selecciona el local —</option>
+      <option value="Barbones Viña">Barbones Viña</option>
+      <option value="Barbones Concon">Barbones Concón</option>
+      <option value="Barbones Curauma">Barbones Curauma</option>
+      <option value="Las Olas">Las Olas</option>
+    </select>
     <label>Turno</label>
     <div class="turno-grid">
       <div class="turno-btn" id="btn-am" onclick="selTurno('AM')">☀️ AM</div>
       <div class="turno-btn" id="btn-pm" onclick="selTurno('PM')">🌙 PM</div>
     </div>
   </div>
-  <button class="btn btn-primary" onclick="goTo(1)">Continuar →</button>
+  <button class="btn btn-primary" onclick="continuar()">Continuar →</button>
 </div>
 
 <!-- STEP 1: Entrada -->
@@ -210,7 +218,7 @@ input:focus,select:focus{border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,1
     <div class="cant-row"><input type="number" id="cant-snack" placeholder="0" min="0" inputmode="numeric"><span class="cant-unit">UND</span></div>
   </div>
   <div class="nav-row">
-    <button class="btn btn-secondary" onclick="goTo(4)">← Atrás</button>
+    <button class="btn btn-secondary" onclick="turno==='PM'?goTo(0):goTo(4)">← Atrás</button>
     <button class="btn btn-primary" onclick="save();goTo(6)">Guardar y continuar</button>
   </div>
 </div>
@@ -332,6 +340,7 @@ function init(){
     if(D[k]){ const e=document.getElementById(k); if(e) e.value=D[k]; }
   });
   if(D.turno) selTurno(D.turno);
+  if(D.local){const el=document.getElementById('local');if(el)el.value=D.local;}
   SECS.forEach(s=>renderIns(s));
   renderMermas();
   if(D.aceite) toggleYN('aceite',D.aceite);
@@ -346,6 +355,7 @@ function save(){
     const e=document.getElementById(k); if(e) D[k]=e.value;
   });
   D.turno=turno;
+  const localEl=document.getElementById('local'); if(localEl) D.local=localEl.value;
   SECS.forEach(s=>{
     D[s]=[];
     document.querySelectorAll(`#ins-${s} .insumo-row`).forEach(r=>{
@@ -365,6 +375,15 @@ function save(){
   D.aceite=YN.aceite; D.temp=YN.temp;
   D.limp={...LS}; D.check={...CS};
   localStorage.setItem('cocina_bb',JSON.stringify(D));
+}
+
+function continuar(){
+  const local = document.getElementById('local');
+  if(local && !local.value){ alert('Por favor selecciona el local.'); return; }
+  if(!document.getElementById('nombre').value.trim()){ alert('Por favor ingresa tu nombre.'); return; }
+  if(!turno){ alert('Por favor selecciona el turno AM o PM.'); return; }
+  save();
+  goTo(turno === 'PM' ? 5 : 1);
 }
 
 function selTurno(t){
@@ -397,7 +416,7 @@ function unitSel(val='kg'){
 function addIns(sec,item={}){
   const c=document.getElementById('ins-'+sec);
   const r=document.createElement('div'); r.className='insumo-row';
-  r.innerHTML=`<input type="text" placeholder="Insumo" value="${item.n||''}" autocomplete="off" autocorrect="off"><input type="text" class="qty" placeholder="0,0" value="${item.q||''}" inputmode="decimal" autocomplete="off">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button>`;
+  r.innerHTML=`<input type="text" placeholder="Insumo" value="${item.n||''}" autocomplete="off" autocorrect="off"><input type="text" class="qty" placeholder="0,0" value="${item.q||''}" inputmode="decimal" autocomplete="off">${unitSel(item.u||'kg')}<button class="del-btn" onclick="this.parentNode.remove()">✕</button>`;
   c.appendChild(r);
   if(!item.n) r.querySelector('input[type=text]').focus();
 }
@@ -413,7 +432,7 @@ function addMerma(item={}){
   const c=document.getElementById('mermas-list');
   const b=document.createElement('div'); b.className='merma-block';
   b.innerHTML=`<label>Insumo / producto</label>
-    <div class="insumo-row"><input type="text" placeholder="Nombre" value="${item.n||''}" autocomplete="off"><input type="text" class="qty" placeholder="0,0" value="${item.q||''}" inputmode="decimal" autocomplete="off">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button></div>
+    <div class="insumo-row"><input type="text" placeholder="Nombre" value="${item.n||''}" autocomplete="off"><input type="text" class="qty" placeholder="0,0" value="${item.q||''}" inputmode="decimal" autocomplete="off">${unitSel(item.u||'kg')}<button class="del-btn" onclick="this.parentNode.remove()">✕</button></div>
     <label>Razón</label><input type="text" placeholder="¿Por qué se generó?" value="${item.r||''}" autocomplete="off">`;
   c.appendChild(b);
 }
@@ -474,6 +493,7 @@ async function enviar(){
   save();
 
   const fecha = D.fecha || new Date().toISOString().split('T')[0];
+  const local = D.local || '';
   const nombre = D.nombre || '';
   const turnoVal = D.turno || '';
   const fechaFmt = fecha.split('-').reverse().join('-');
@@ -489,27 +509,27 @@ async function enviar(){
     const cantV = D[cantKey]||'';
     // Fila cantidad preparada
     if(cantV){
-      insumos.push([fechaFmt, nombre, turnoVal, prep, 'CANTIDAD PREPARADA', Number(cantV), cantUnit]);
+      insumos.push([fechaFmt, local, nombre, turnoVal, prep, 'CANTIDAD PREPARADA', Number(cantV), cantUnit]);
     }
     // Filas insumos
     for(const item of items){
-      if(item.n) insumos.push([fechaFmt, nombre, turnoVal, prep, item.n, parseQ(item.q), item.u]);
+      if(item.n) insumos.push([fechaFmt, local, nombre, turnoVal, prep, item.n, parseQ(item.q), item.u]);
     }
   }
   // Mermas
   for(const m of (D.mermas||[])){
     if(m.n){
       const detalle = m.n + (m.r ? ` — ${m.r}` : '');
-      insumos.push([fechaFmt, nombre, turnoVal, 'Merma', detalle, parseQ(m.q), m.u]);
+      insumos.push([fechaFmt, local, nombre, turnoVal, 'Merma', detalle, parseQ(m.q), m.u]);
     }
   }
 
   // Fila turno
-  const turnoHeaders = ['Fecha','Responsable','Turno','Cambio aceite','Control T°',
+  const turnoHeaders = ['Fecha','Local','Responsable','Turno','Cambio aceite','Control T°',
     ...LIMP.map(x=>'Limp. — '+x),
     ...CHECK.map(x=>'Check — '+x)];
   const turnoRow = [
-    fechaFmt, nombre, turnoVal,
+    fechaFmt, local, nombre, turnoVal,
     D.aceite==='si'?'Sí':'No',
     D.temp==='si'?'Sí':'No',
     ...LIMP.map(x=>(D.limp&&D.limp[x])?'Sí':'No'),
