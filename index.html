@@ -350,7 +350,7 @@ function save(){
     D[s]=[];
     document.querySelectorAll(`#ins-${s} .insumo-row`).forEach(r=>{
       const ni=r.querySelector('input[type=text]');
-      const nq=r.querySelector('input[type=number]');
+      const nq=r.querySelector('.qty');
       const nu=r.querySelector('select');
       if(ni&&ni.value.trim()) D[s].push({n:ni.value.trim(),q:nq?nq.value.replace(',','.'):'',u:nu?nu.value:'kg'});
     });
@@ -358,7 +358,7 @@ function save(){
   D.mermas=[];
   document.querySelectorAll('#mermas-list .merma-block').forEach(b=>{
     const texts=b.querySelectorAll('input[type=text]');
-    const nq=b.querySelector('input[type=number]');
+    const nq=b.querySelector('.qty');
     const nu=b.querySelector('select');
     D.mermas.push({n:texts[0]?texts[0].value:'',q:nq?nq.value.replace(',','.'):'',u:nu?nu.value:'kg',r:texts[1]?texts[1].value:''});
   });
@@ -397,7 +397,7 @@ function unitSel(val='kg'){
 function addIns(sec,item={}){
   const c=document.getElementById('ins-'+sec);
   const r=document.createElement('div'); r.className='insumo-row';
-  r.innerHTML=`<input type="text" placeholder="Insumo" value="${item.n||''}" autocomplete="off" autocorrect="off"><input type="text" placeholder="0,0" value="${item.q||''}" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button>`;
+  r.innerHTML=`<input type="text" placeholder="Insumo" value="${item.n||''}" autocomplete="off" autocorrect="off"><input type="text" class="qty" placeholder="0,0" value="${item.q||''}" inputmode="decimal" autocomplete="off">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button>`;
   c.appendChild(r);
   if(!item.n) r.querySelector('input[type=text]').focus();
 }
@@ -413,7 +413,7 @@ function addMerma(item={}){
   const c=document.getElementById('mermas-list');
   const b=document.createElement('div'); b.className='merma-block';
   b.innerHTML=`<label>Insumo / producto</label>
-    <div class="insumo-row"><input type="text" placeholder="Nombre" value="${item.n||''}" autocomplete="off"><input type="text" placeholder="0,0" value="${item.q||''}" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button></div>
+    <div class="insumo-row"><input type="text" placeholder="Nombre" value="${item.n||''}" autocomplete="off"><input type="text" class="qty" placeholder="0,0" value="${item.q||''}" inputmode="decimal" autocomplete="off">${unitSel(item.u)}<button class="del-btn" onclick="this.parentNode.remove()">✕</button></div>
     <label>Razón</label><input type="text" placeholder="¿Por qué se generó?" value="${item.r||''}" autocomplete="off">`;
   c.appendChild(b);
 }
@@ -467,7 +467,7 @@ function resetApp(){
 
 function parseQ(v){
   if(v===''||v===null||v===undefined) return '';
-  return Number(String(v).replace(',','.')) || '';
+  const n = Number(String(v).replace(',','.')); return isNaN(n) ? '' : n;
 }
 
 async function enviar(){
